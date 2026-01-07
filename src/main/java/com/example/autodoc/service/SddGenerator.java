@@ -12,35 +12,56 @@ public class SddGenerator {
     @Autowired
     RemoteGitService remoteGitService;
 
+    @Autowired
+    DiffService diffService;
+
+    @Autowired
+    SourceAggregatorService aggregatorService;
+
 
     public SddGenerator(ChatClient.Builder builder) {
         this.chatClient = builder.build();
     }
 
-    public String generateSdd(String codebase) {
-        // 1. Extract technical context from local files
-        String pomContent = remoteGitService.getPomContent(codebase);
-//        String currentCode = gitScanner.getLatestSourceCode(repoPath);
-//        String gitDiff = diffService.getCommitDiff(repoPath);
+    public String generateSdd(String repoPath) throws Exception {
 
-        // 2. Structured Prompt for the "Deep Scan"
-        String prompt = """
-    You are a Lead Software Architect. Create an Enterprise Software Design Document (SDD) by analyzing the provided code.
-    
-    Structure the document as follows:
-    1. Introduction & Architecture (Identify patterns like MVC/Microservices).
-    2. Tech Stack (List versions from pom.xml).
-    3. API Design (Table of endpoints with example JSON payloads).
-    4. Component Logic (Explain the core Service classes).
-    5. Operational Guide (Local run commands and Env Var requirements).
-    6. Change Log (Summarize the latest Git Diff).
-    
-    Use Mermaid.js syntax for any sequence or class diagrams where applicable.
-    """;
+
+        String prompt = String.format("""
+        Act as a Principal Software Architect. Your task is to generate a comprehensive, 
+        Enterprise-Grade Software Design Document (SDD) based on the provided code.
+
+        ### DOCUMENT STRUCTURE:
+        
+        ## 1. EXECUTIVE SUMMARY
+        - Briefly describe the system's core value and architectural style.
+        
+        ## 2. TECHNICAL STACK
+        - List languages, frameworks, and specific libraries identified.
+        
+        ## 3. COMPONENT DESIGN & LOGIC
+        - Explain the responsibility of each class.
+        - Describe the data flow between components.
+        
+        ## 4. API SPECIFICATIONS
+        - Generate a professional table of endpoints.
+        - Provide sample JSON Request/Response payloads.
+        
+        ## 5. QUALITY & SECURITY
+        - Identify potential edge cases for testing.
+        - Describe the security implementation for credentials and data.
+        
+        ## 6. DEPLOYMENT & LOCAL RUN
+        - Provide the shell commands for building and running.
+
+        ### CODE CONTEXT TO ANALYZE:
+        %s
+        
+        Format the output in clean Markdown with professional headings.
+        """, repoPath);
 
         return chatClient.prompt()
                 .system(prompt)
-                .user("Analyze this codebase and create the SDD:\n\n" + codebase)
+                .user("Analyze this codebase and create the SDD:\n\n" + repoPath)
                 .call()
                 .content();
     }
