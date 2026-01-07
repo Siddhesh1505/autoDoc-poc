@@ -20,6 +20,8 @@ public class DiffService {
             ObjectId head = repository.resolve("HEAD^{tree}");
             ObjectId previous = repository.resolve("HEAD~1^{tree}");
 
+            //Test
+
             CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
             try (ObjectReader reader = repository.newObjectReader()) {
                 oldTreeIter.reset(reader, previous);
