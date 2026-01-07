@@ -1,5 +1,6 @@
 package com.example.autodoc.controller;
 
+import com.example.autodoc.service.JiraService;
 import com.example.autodoc.service.LocalGitScanner;
 import com.example.autodoc.service.RemoteGitService;
 import com.example.autodoc.service.SddGenerator;
@@ -22,6 +23,9 @@ public class DocController {
     private final LocalGitScanner scanner;
     private final SddGenerator generator;
     private final RemoteGitService remoteGit;
+
+    @Autowired
+    JiraService jiraService;
 
     // Use constructor injection (Best Practice over @Autowired)
     public DocController(LocalGitScanner scanner, SddGenerator generator, RemoteGitService remoteGit) {
@@ -60,5 +64,29 @@ public class DocController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Failed to generate documentation. Please check server logs.");
         }
+    }
+
+    @GetMapping("/build-sdd")
+    public String build(@RequestParam String repoUrl, @RequestParam String jiraKey) throws Exception {
+        // 1. Fetch Requirements from Jira
+        String jiraContext = jiraService.fetchIssueRequirements(jiraKey);
+
+        // 2. Fetch Code from Remote Git
+        String code = remoteGit.fetchRemoteCode(repoUrl);
+
+        // 3. Send both to AI
+        String prompt = String.format("""
+        System: You are an architect validating code against requirements.
+        
+        %s
+        
+        ### IMPLEMENTED CODE:
+        %s
+        
+        Task: Create an SDD update. Compare if the code fulfills the Jira requirement. 
+        Identify any missing logic or security risks.
+        """, jiraContext, code);
+
+        return generator.generateSdd(prompt);
     }
 }
