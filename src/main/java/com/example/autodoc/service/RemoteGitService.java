@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Comparator;
 
 @Service
@@ -52,5 +53,14 @@ public class RemoteGitService {
                     }
                 });
         return content.toString();
+    }
+
+    public String getPomContent(String repoPath) {
+        try {
+            Path pomPath = Paths.get(repoPath, "pom.xml");
+            return Files.readString(pomPath);
+        } catch (IOException e) {
+            return "pom.xml not found";
+        }
     }
 }
