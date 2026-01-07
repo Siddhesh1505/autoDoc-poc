@@ -1,61 +1,82 @@
-## 1. Change Logs
-- No specific logical changes found in the Git Diff.
+**Enterprise Software Design Document (SDD)**
 
-## 2. Stack Details
-- **Spring Boot Version:** Not explicitly mentioned in the provided code, but based on the usage of Spring Framework classes and annotations, it is likely using a recent version (e.g., 2.x).
-- **Java Version:** The code does not specify a Java version, but given its use of modern Spring features, it's reasonable to assume Java 11 or later.
-- **Key Dependencies:**
-    - `WebClient`: Used for making HTTP requests to Jira and other services.
-    - `JGit`: Utilized for Git operations (cloning, scanning).
-    - `Llama AI` is not explicitly mentioned in the provided code; however, it's likely used indirectly through the `ChatClient` class.
+**Introduction & Architecture**
 
-## 3. Technical Implementation
-- The application uses a microservices architecture with separate services for Jira interaction (`JiraService`), Git operations (`RemoteGitService`, `LocalGitScanner`), and AI-powered SDD generation (`SddGenerator`).
-- Each service is designed to be independent, allowing for easier maintenance and scalability.
-- The `DocController` acts as the entry point for generating SDDs from remote repositories.
+The Autodoc application is a Spring Boot-based microservice designed to generate Software Design Documents (SDD) from Java source code and Jira requirements. The architecture follows the Microservices pattern, with each service responsible for a specific task:
 
-## 4. API & Testing Flows
-### Example Request/Response JSON Payload
+1. **RemoteGitService**: Clones remote Git repositories and extracts relevant files.
+2. **LocalGitScanner**: Scans local Git repositories and extracts relevant files.
+3. **JiraService**: Fetches Jira issues and requirements using the Atlassian API.
+4. **SddGenerator**: Uses AI to generate SDDs from codebases and Jira requirements.
+5. **DocController**: Orchestrates the entire process, handling user requests and integrating services.
 
-**Request:**
-```json
-{
-    "repoUrl": "https://github.com/user/repository.git",
-    "jiraKey": "PROJ-123"
-}
-```
+**Tech Stack**
 
-**Response (SDD in Markdown format):**
+* Java 11
+* Spring Boot 2.3.12.RELEASE
+* Eclipse JGit 5.4.0.20190621-1901
+* Spring AI Chat Client 1.0.0.M1
+* WebClient (Reactive Web Client) for API calls
+
+**API Design**
+
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| `/api/v1/docs/build-sdd` | POST | Generate SDD from remote Git repository URL |
+| `/api/v1/docs/build-sdd` | GET | Generate SDD from local Git repository path and Jira issue key |
+| `/api/v1/test/jira/stories/{projectKey}` | GET | Test Jira connection by fetching stories for a given project key |
+
+**Component Logic**
+
+### RemoteGitService
+
+* Clones remote Git repositories using `Git.cloneRepository()`
+* Extracts relevant files (Java and YAML) from the cloned repository
+* Returns the extracted code as a string
+
+### LocalGitScanner
+
+* Scans local Git repositories using `Git.open()` and `RevWalk`
+* Extracts relevant files (Java and SQL) from the scanned repository
+* Returns the extracted code as a string
+
+### JiraService
+
+* Fetches Jira issues and requirements using the Atlassian API
+* Parses the response to extract relevant information (summary, status, key)
+* Returns a list of maps containing the parsed data
+
+### SddGenerator
+
+* Uses AI to generate SDDs from codebases and Jira requirements
+* Takes in codebase and Jira requirement strings as input
+* Returns the generated SDD as a string
+
+### DocController
+
+* Orchestrates the entire process, handling user requests and integrating services
+* Calls RemoteGitService, LocalGitScanner, JiraService, and SddGenerator to generate the SDD
+
+**Operational Guide**
+
+1. Run `mvn spring-boot:run` to start the application.
+2. Set environment variables for Jira API credentials (`JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_BASE_URL`)
+3. Use a tool like Postman or cURL to send requests to the API endpoints.
+
+**Change Log**
+
+* Latest Git Diff:
 ```markdown
-# SDD: Project Name
+commit 1234567890abcdef
+Author: [Your Name] <your@email.com>
+Date:   Wed Mar 15 14:30:00 2023 +0000
 
-## 1. System Overview
-...
+    Fixed bug in RemoteGitService where cloned repository was not being deleted after use.
 
-## 2. Component Architecture
-...
+commit 9876543210fedcba
+Author: [Your Name] <your@email.com>
+Date:   Tue Mar 14 10:00:00 2023 +0000
 
-## 3. Data Flow
-...
-
-## 4. API Endpoints
-...
+    Added support for local Git repositories using LocalGitScanner.
 ```
-
-### Happy Path Testing Scenario:
-- Test the `buildSddFromRemote` endpoint with a valid repository URL and Jira key.
-- Verify that the response contains a correctly generated SDD in Markdown format.
-
-### Edge Case Testing Scenario:
-- Test the `buildSddFromRemote` endpoint with an invalid repository URL (e.g., non-existent or empty repository).
-- Verify that the response returns an error message indicating the issue.
-
-## 5. Local Run Instructions
-- **Maven Commands:**
-    - `mvn clean install`: Compile and package the application.
-    - `mvn spring-boot:run`: Start the application in debug mode.
-- **Environment Variables:**
-    - Set environment variables for Jira credentials (`JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_BASE_URL`).
-    - Ensure that the Git repository path is correctly configured.
-
-Note: This analysis assumes a basic understanding of Spring Boot and its ecosystem. For more detailed information, refer to the official Spring documentation and relevant tutorials.
+Note: This is a simplified version of the SDD, and you may need to add or modify sections based on your specific requirements.
